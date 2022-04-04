@@ -26,7 +26,7 @@ func Test(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			h := NewHandlers(nil)
-			h.Home(test.out, test.in)
+			h.GetAllUsers(test.out, test.in)
 			if test.out.Code != test.expectedStatus {
 				t.Logf("expected: %d\ngot: %d\n", test.expectedStatus, test.out.Code)
 				t.Fail()

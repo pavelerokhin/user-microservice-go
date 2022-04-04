@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"./server"
+	"./store"
 )
 
 
@@ -16,20 +17,13 @@ func main() {
 	var err error
 	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags | log.Lshortfile)
 
-	//db, err := sqlx.Open("sqlite", "users.db")
-	//if err != nil {
-	//	logger.Fatalln(err)
-	//}
-	//
-	//err = db.Ping()
-	//if err != nil {
-	//	logger.Fatalln(err)
-	//}
-	//
+	db, err := store.NewSQLite()
+	if err != nil {
+		logger.Fatalln(err)
+	}
 
-	h := server.NewHandlers(logger, nil)
+	h := server.NewHandlers(logger, db)
 	router := h.SetupRouts()
-
 	srv := server.New(router, serviceAddr)
 
 	logger.Println("server starting")

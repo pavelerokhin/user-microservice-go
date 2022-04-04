@@ -1,9 +1,9 @@
 package server
 
 import (
+	"../store"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"log"
 	"net/http"
 )
@@ -11,7 +11,7 @@ import (
 
 type Handlers struct {
 	logger *log.Logger
-	db *sqlx.DB
+	db *store.DB
 }
 
 const message = "start here"
@@ -93,7 +93,7 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(message + " " + id))
 }
 
-func NewHandlers(logger *log.Logger, db *sqlx.DB) *Handlers {
+func NewHandlers(logger *log.Logger, db *store.DB) *Handlers {
 	return &Handlers {
 		logger: logger,
 		db: db,

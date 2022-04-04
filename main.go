@@ -2,10 +2,7 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
-
-	"github.com/jmoiron/sqlx"
 
 	"./server"
 )
@@ -16,24 +13,24 @@ var (
 )
 
 func main() {
+	var err error
 	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags | log.Lshortfile)
 
-	db, err := sqlx.Open("sqlite", "users.db")
-	if err != nil {
-		logger.Fatalln(err)
-	}
+	//db, err := sqlx.Open("sqlite", "users.db")
+	//if err != nil {
+	//	logger.Fatalln(err)
+	//}
+	//
+	//err = db.Ping()
+	//if err != nil {
+	//	logger.Fatalln(err)
+	//}
+	//
 
-	err = db.Ping()
-	if err != nil {
-		logger.Fatalln(err)
-	}
+	h := server.NewHandlers(logger, nil)
+	router := h.SetupRouts()
 
-	h := server.NewHandlers(logger, db)
-
-	mux := http.NewServeMux()
-	h.SetupRouts(mux)
-
-	srv := server.New(mux, serviceAddr)
+	srv := server.New(router, serviceAddr)
 
 	logger.Println("server starting")
 	err = srv.ListenAndServe()

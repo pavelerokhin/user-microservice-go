@@ -2,20 +2,19 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 
 	"./server"
 	"./store"
 )
 
-
 var (
 	serviceAddr = ":8080"
 )
 
 func main() {
-	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags | log.Lshortfile)
+	var err error
+	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags|log.Lshortfile)
 
 	db, err := store.NewSQLite()
 	if err != nil {
@@ -23,11 +22,8 @@ func main() {
 	}
 
 	h := server.NewHandlers(logger, db)
-
-	mux := http.NewServeMux()
-	h.SetupRouts(mux)
-
-	srv := server.New(mux, serviceAddr)
+	router := h.SetupRouts()
+	srv := server.New(router, serviceAddr)
 
 	logger.Println("server starting")
 	err = srv.ListenAndServe()
@@ -35,6 +31,3 @@ func main() {
 		logger.Fatalf("server failed to start %v", err)
 	}
 }
-
-
-

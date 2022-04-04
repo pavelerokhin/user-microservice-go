@@ -1,5 +1,6 @@
 package store
 
+// TODO: implement	gorm.Model
 type User struct {
 	Id        string `json:"id"`
 	FirstName string `json:"first_name"`

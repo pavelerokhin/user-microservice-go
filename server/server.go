@@ -2,11 +2,12 @@ package server
 
 import (
 	"crypto/tls"
+	"github.com/gorilla/mux"
 	"net/http"
 	"time"
 )
 
-func New(mux *http.ServeMux, serviceAddr string) *http.Server {
+func New(mux *mux.Router, serviceAddr string) *http.Server {
 	tlsConfig := &tls.Config {
 		PreferServerCipherSuites: true,
 		CurvePreferences: []tls.CurveID{

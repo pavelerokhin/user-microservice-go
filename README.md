@@ -2,12 +2,12 @@
 test commitment for F.I. 
 
 ## data model
-User type (all fields of type `string`:
+User type:
 - `id`
 - `first_name`
 - `last_name`
-- `nuckname`
-- `pssword`
+- `nickname`
+- `password`
 - `email`
 - `country`
 - `created_at`

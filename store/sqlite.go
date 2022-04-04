@@ -18,11 +18,13 @@ func NewSQLite() (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	db.DB = sqlite
 
 	err = sqlite.AutoMigrate(&User{})
 	if err != nil {
 		return nil, err
 	}
+
 	return &db, nil
 }

@@ -8,14 +8,13 @@ import (
 	"./store"
 )
 
-
 var (
 	serviceAddr = ":8080"
 )
 
 func main() {
 	var err error
-	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags | log.Lshortfile)
+	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags|log.Lshortfile)
 
 	db, err := store.NewSQLite()
 	if err != nil {
@@ -32,6 +31,3 @@ func main() {
 		logger.Fatalf("server failed to start %v", err)
 	}
 }
-
-
-

@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jmoiron/sqlx"
-
 	"./server"
+	"./store"
 )
 
 
@@ -18,12 +17,7 @@ var (
 func main() {
 	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags | log.Lshortfile)
 
-	db, err := sqlx.Open("sqlite", "users.db")
-	if err != nil {
-		logger.Fatalln(err)
-	}
-
-	err = db.Ping()
+	db, err := store.NewSQLite()
 	if err != nil {
 		logger.Fatalln(err)
 	}

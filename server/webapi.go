@@ -41,5 +41,9 @@ func NewHandlers(logger *log.Logger, db *sqlx.DB) *Handlers {
 
 func (h *Handlers) SetupRouts(mux *http.ServeMux) {
 	mux.HandleFunc("/", h.Logger(h.Home))
-
+	mux.HandleFunc("/get/{id}", h.Logger(h.Home))
+	mux.HandleFunc("/filter", h.Logger(h.Home))
+	mux.HandleFunc("/add", h.Logger(h.Home))
+	mux.HandleFunc("/delete/{id}", h.Logger(h.Home))
+	mux.HandleFunc("/update/{id}", h.Logger(h.Home))
 }

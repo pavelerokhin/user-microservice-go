@@ -56,7 +56,20 @@ Deleting user with id 1:
 curl --location --request POST 'http://localhost:8080/user/1' 
 ```
 
-## API, return paginated list of Users, allowing for filtering by certain critetia
+## API return _all_ Users
+Get all Users:
+```
+curl --location --request GET 'http://localhost:8080/users'
+```
+
+## API, return _paginated list_ of Users,:
+Paginate all list of Users, 3 items on page, get page #2:
+
+```
+curl --location --request GET 'http://localhost:8080/users/3/2'
+```
+
+## API _filter_ Users:
 
 ```
 curl --location --request GET 'http://localhost:8080/users'

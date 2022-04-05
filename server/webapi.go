@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/golang/gddo/httputil/header"
@@ -39,7 +41,7 @@ func (h *Handlers) AddUser(w http.ResponseWriter, r *http.Request) {
 
 	h.db.DB.Save(user)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("User has been successfully added: %+v", r.Body))) // TODO: doesnt write the response
+	w.Write([]byte("User has been successfully added"))
 }
 
 func (h *Handlers) AllUsers(w http.ResponseWriter, r *http.Request) {
@@ -65,12 +67,43 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/json; charset=utf-8")
-
 	var users []store.User
-	h.db.DB.Find(&users)
 
+	vars := mux.Vars(r)
+	if vars["pagination-size"] != "" {
+		pageSize, err := strconv.Atoi(vars["pagination-size"])
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Cannot get pagination limit"))
+			return
+		}
+
+		page, err := strconv.Atoi(vars["page"])
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Cannot get page number for pagination"))
+			return
+		}
+		if pageSize <= 0 {
+			pageSize = 1
+		}
+
+		h.db.DB.Scopes(Paginate(page, pageSize)).Find(&users)
+
+	} else {
+		// show all users
+		h.db.DB.Find(&users)
+	}
+
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&users)
+}
+
+func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
+	return func (db *gorm.DB) *gorm.DB {
+		offset := (page - 1) * pageSize
+		return db.Offset(offset).Limit(pageSize)
+	}
 }
 
 func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -235,7 +268,8 @@ func mergeUserObjects(userSource, userDest *store.User) {
 
 func (h *Handlers) SetupRouts() *mux.Router {
 	router := mux.NewRouter()
-	router.HandleFunc("/users", h.GetUsers).Methods(http.MethodGet)
+	router.HandleFunc("/users", h.GetUsers).Methods(http.MethodGet) // without pagination
+	router.HandleFunc("/users/{pagination-size:[0-9]+}/{page:[0-9]+}", h.GetUsers).Methods(http.MethodGet) // with pagination
 	router.HandleFunc("/user", h.AddUser).Methods(http.MethodPost)
 	router.HandleFunc("/user/{id}", h.UpdateUser).Methods(http.MethodPost)
 	router.HandleFunc("/user/{id}", h.GetUser).Methods(http.MethodGet)

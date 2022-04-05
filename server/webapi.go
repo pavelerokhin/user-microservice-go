@@ -69,6 +69,13 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []store.User
 
+	var filters *store.User
+	filters, err := unmarshalUserFromRequestBody(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	vars := mux.Vars(r)
 	if vars["pagination-size"] != "" {
 		pageSize, err := strconv.Atoi(vars["pagination-size"])
@@ -88,11 +95,18 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 			pageSize = 1
 		}
 
-		h.db.DB.Scopes(Paginate(page, pageSize)).Find(&users)
-
+		if filters != nil {
+			h.db.DB.Scopes(Paginate(page, pageSize)).Where(&filters).Find(&users)
+		} else {
+			h.db.DB.Scopes(Paginate(page, pageSize)).Find(&users)
+		}
 	} else {
 		// show all users
-		h.db.DB.Find(&users)
+		if filters != nil {
+			h.db.DB.Where(&filters).Find(&users)
+		} else {
+			h.db.DB.Find(&users)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -268,8 +282,8 @@ func mergeUserObjects(userSource, userDest *store.User) {
 
 func (h *Handlers) SetupRouts() *mux.Router {
 	router := mux.NewRouter()
-	router.HandleFunc("/users", h.GetUsers).Methods(http.MethodGet) // without pagination
-	router.HandleFunc("/users/{pagination-size:[0-9]+}/{page:[0-9]+}", h.GetUsers).Methods(http.MethodGet) // with pagination
+	router.HandleFunc("/users", h.GetUsers).Methods(http.MethodGet, http.MethodPost) // without pagination
+	router.HandleFunc("/users/{pagination-size:[0-9]+}/{page:[0-9]+}", h.GetUsers).Methods(http.MethodGet, http.MethodPost) // with pagination
 	router.HandleFunc("/user", h.AddUser).Methods(http.MethodPost)
 	router.HandleFunc("/user/{id}", h.UpdateUser).Methods(http.MethodPost)
 	router.HandleFunc("/user/{id}", h.GetUser).Methods(http.MethodGet)

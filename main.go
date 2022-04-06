@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -8,11 +10,10 @@ import (
 	"./store"
 )
 
-var (
-	serviceAddr = ":8080"
-)
-
 func main() {
+	portPtr := flag.String("port", "8080", "Server port. Default: 8080")
+	flag.Parse()
+
 	var err error
 	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags|log.Lshortfile)
 
@@ -23,9 +24,9 @@ func main() {
 
 	h := server.NewHandlers(logger, db)
 	router := h.SetupRouts()
-	srv := server.New(router, serviceAddr)
+	srv := server.New(router, fmt.Sprintf(":%s",*portPtr))
 
-	logger.Println("server starting")
+	logger.Printf("server starting localhost at port %s", *portPtr)
 	err = srv.ListenAndServe()
 	if err != nil {
 		logger.Fatalf("server failed to start %v", err)

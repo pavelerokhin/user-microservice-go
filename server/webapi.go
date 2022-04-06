@@ -15,6 +15,8 @@ import (
 	"github.com/gorilla/mux"
 
 	"../store"
+	"../utils"
+
 )
 
 type Handlers struct {
@@ -38,7 +40,22 @@ func (h *Handlers) AddUser(w http.ResponseWriter, r *http.Request) {
 	user, rerr, statusCode := unmarshalUserFromRequestBody(r)
 	if rerr != nil {
 		w.WriteHeader(statusCode)
-		h.logger.Println(fmt.Sprintf("error adding user: %s", rerr))
+		msg := fmt.Sprintf("error adding user: %s", rerr.Error())
+		w.Write([]byte(msg))
+		h.logger.Println(msg)
+		return
+	}
+
+	emptyFields := utils.CheckEmptyFields(user)
+	if len(emptyFields) != 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		msg := fmt.Sprintf("Request has empty fields: %s", emptyFields)
+		h.logger.Printf(msg)
+		_, err := w.Write([]byte(msg))
+
+		if err != nil {
+			h.logger.Printf("error: User has not been added, and there's a problem returning the response: %v", err)
+		}
 		return
 	}
 
@@ -51,7 +68,6 @@ func (h *Handlers) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	h.logger.Println("User has been successfully added")
 }
 
@@ -154,7 +170,6 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	h.logger.Println("users have been listed successfully")
 }
 
@@ -247,16 +262,15 @@ func getIdFromVars(r *http.Request) string {
 
 type ResponseError struct {
 	message string
-	Err error
 }
 func (e *ResponseError) Error() string {
-	return e.Err.Error()
+	return e.message
 }
 
 type EmptyBody ResponseError
 
 func (e *EmptyBody) Error() string {
-	return e.Err.Error()
+	return e.message
 }
 
 func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error, int) {
@@ -278,21 +292,21 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error, int) {
 		// which interpolates the location of the problem to make it
 		// easier for the client to fix.
 		case errors.As(err, &syntaxError):
-			return nil, &ResponseError{fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset), err}, http.StatusBadRequest
+			return nil, &ResponseError{fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)}, http.StatusBadRequest
 
 		// In some circumstances Decode() may also return an
 		// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
 		// is an open issue regarding this at
 		// https://github.com/golang/go/issues/25956.
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			return nil, &ResponseError{fmt.Sprintf("Request body contains badly-formed JSON"), err }, http.StatusBadRequest
+			return nil, &ResponseError{fmt.Sprintf("Request body contains badly-formed JSON") }, http.StatusBadRequest
 
 		// Catch any type errors, like trying to assign a string in the
 		// JSON request body to a int field in our Person struct. We can
 		// interpolate the relevant field name and position into the error
 		// message to make it easier for the client to fix.
 		case errors.As(err, &unmarshalTypeError):
-			return nil, &ResponseError{fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset), err }, http.StatusBadRequest
+			return nil, &ResponseError{fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset) }, http.StatusBadRequest
 
 		// Catch the error caused by extra unexpected fields in the request
 		// body. We extract the field name from the error message and
@@ -301,23 +315,23 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error, int) {
 		// turning this into a sentinel error.
 		case strings.HasPrefix(err.Error(), "json: unknown field "):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			return nil, &ResponseError{fmt.Sprintf("Request body contains unknown field %s", fieldName), err}, http.StatusBadRequest
+			return nil, &ResponseError{fmt.Sprintf("Request body contains unknown field %s", fieldName) }, http.StatusBadRequest
 
 		// An io.EOF error is returned by Decode() if the request body is
 		// empty.
 		case errors.Is(err, io.EOF):
-			return nil, &EmptyBody{"Request body must not be empty", err}, http.StatusBadRequest
+			return nil, &EmptyBody{"Request body must not be empty" }, http.StatusBadRequest
 
 		// Catch the error caused by the request body being too large. Again
 		// there is an open issue regarding turning this into a sentinel
 		// error at https://github.com/golang/go/issues/30715.
 		case err.Error() == "http: request body too large":
-			return nil, &ResponseError{fmt.Sprintf("Request body must not be larger than 1MB"), err }, http.StatusRequestEntityTooLarge
+			return nil, &ResponseError{fmt.Sprintf("Request body must not be larger than 1MB") }, http.StatusRequestEntityTooLarge
 
 		// Otherwise default to logging the error and sending a 500 Internal
 		// Server Error response.
 		default:
-			return nil, &ResponseError{fmt.Sprintf("Internal server error"), err }, http.StatusInternalServerError
+			return nil, &ResponseError{fmt.Sprintf("Internal server error") }, http.StatusInternalServerError
 		}
 	}
 
@@ -327,7 +341,7 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error, int) {
 	// we know that there is additional data in the request body.
 	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
-		return nil,  &ResponseError{fmt.Sprintf("Request body must only contain a single JSON object"), err }, http.StatusBadRequest
+		return nil,  &ResponseError{fmt.Sprintf("Request body must only contain a single JSON object") }, http.StatusBadRequest
 	}
 
 	return &user, nil, http.StatusOK

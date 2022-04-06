@@ -15,6 +15,8 @@ import (
 	"github.com/gorilla/mux"
 
 	"../store"
+	"../utils"
+
 )
 
 type Handlers struct {
@@ -35,16 +37,37 @@ func (h *Handlers) AddUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := unmarshalUserFromRequestBody(r)
-	if err != nil {
+	user, rerr, statusCode := unmarshalUserFromRequestBody(r)
+	if rerr != nil {
+		w.WriteHeader(statusCode)
+		msg := fmt.Sprintf("error adding user: %s", rerr.Error())
+		w.Write([]byte(msg))
+		h.logger.Println(msg)
+		return
+	}
+
+	emptyFields := utils.CheckEmptyFields(user)
+	if len(emptyFields) != 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		h.logger.Println(fmt.Sprintf("error adding user: %s", err))
+		msg := fmt.Sprintf("Request has empty fields: %s", emptyFields)
+		h.logger.Printf(msg)
+		_, err := w.Write([]byte(msg))
+
+		if err != nil {
+			h.logger.Printf("error: User has not been added, and there's a problem returning the response: %v", err)
+		}
 		return
 	}
 
 	h.db.DB.Save(user)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User has been successfully added"))
+	_, err := w.Write([]byte("User has been successfully added"))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Printf("error: User has been successfully added, but there's a problem returning the response: %v", err)
+
+		return
+	}
+
 	h.logger.Println("User has been successfully added")
 }
 
@@ -59,9 +82,16 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	h.db.DB.Where("id = ?", id).Find(&user)
 	h.db.DB.Delete(&user)
 
-	w.WriteHeader(http.StatusOK)
 	msg := fmt.Sprintf("User with id %s has been deleted successfully", id)
-	w.Write([]byte(msg))
+	_, err := w.Write([]byte(msg))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Printf("error: User has been successfully deleted, but there's a problem returning the response: %v", err)
+
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	h.logger.Println(msg)
 }
 
@@ -73,11 +103,11 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	var filters *store.User
 
-	filters, err = unmarshalUserFromRequestBody(r)
+	filters, rerr, statusCode := unmarshalUserFromRequestBody(r)
 	emptyBodyErrorImpl := &EmptyBody{}
-	if err != nil && !errors.As(err, &emptyBodyErrorImpl) {
-		w.WriteHeader(http.StatusBadRequest)
-		h.logger.Println(fmt.Sprintf("error listing users: %s", err))
+	if rerr != nil && !errors.As(rerr, &emptyBodyErrorImpl) {
+		w.WriteHeader(statusCode)
+		h.logger.Println(fmt.Sprintf("error listing users: %s", rerr))
 		return
 	}
 
@@ -88,16 +118,26 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		pageSize, err := strconv.Atoi(vars["pagination-size"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Cannot get pagination limit"))
-			h.logger.Println(fmt.Sprintf("error listing users: %s", err))
+			msg := fmt.Sprintf("Cannot get pagination limit: %v", err)
+			h.logger.Println(msg)
+
+			_, err = w.Write([]byte(msg))
+			if err != nil {
+				h.logger.Println(fmt.Sprintf("error returning the reponse: %v", err))
+			}
 			return
 		}
 
 		page, err := strconv.Atoi(vars["page"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Cannot get page number for pagination"))
-			h.logger.Println(fmt.Sprintf("error listing users: %s", err))
+			msg := fmt.Sprintf("Cannot get page number for pagination: %v", err)
+			h.logger.Println(msg)
+
+			_, err = w.Write([]byte(msg))
+			if err != nil {
+				h.logger.Println(fmt.Sprintf("error returning the reponse: %v", err))
+			}
 			return
 		}
 		if pageSize <= 0 {
@@ -123,8 +163,13 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&users)
+	err = json.NewEncoder(w).Encode(&users)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Printf("error: users have been listed successfully, but there's a problem returning the response: %v", err)
+		return
+	}
+
 	h.logger.Println("users have been listed successfully")
 }
 
@@ -144,9 +189,15 @@ func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
 	var user store.User
 	h.db.DB.Where("id = ?", id).Find(&user)
 
+	err := json.NewEncoder(w).Encode(&user)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Printf("error: user has been listed successfully, but there's a problem returning the response: %v", err)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&user)
-	h.logger.Println("user has been listed successfully")
+	h.logger.Println("users have been listed successfully")
 }
 
 func (h *Handlers) Heartbeat(w http.ResponseWriter, r *http.Request) {
@@ -166,24 +217,35 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if &user == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		msg := fmt.Sprintf("Cannot find user with id %s", id)
-		w.Write([]byte(msg))
 		h.logger.Println(fmt.Sprintf("error updating user: %s", msg))
+
+		_, err := w.Write([]byte(msg))
+		if err != nil {
+			h.logger.Println(fmt.Sprintf("error returning the reponse: %v", err))
+		}
 		return
 	}
 
-	newUser, err := unmarshalUserFromRequestBody(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	newUser, rerr, statusCode := unmarshalUserFromRequestBody(r)
+	if rerr != nil {
+		w.WriteHeader(statusCode)
+		h.logger.Println(fmt.Sprintf("error update user: %s", rerr))
 		return
 	}
 	mergeUserObjects(&user, newUser)
 
 	h.db.DB.Save(user)
 
-	w.WriteHeader(http.StatusOK)
 	msg := fmt.Sprintf("User with id %s has been updated successfully", id)
-	w.Write([]byte(msg))
 	h.logger.Println(msg)
+
+	_, err := w.Write([]byte(msg))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+	}
+	w.WriteHeader(http.StatusOK)
+
 }
 
 func NewHandlers(logger *log.Logger, db *store.DB) *Handlers {
@@ -198,22 +260,20 @@ func getIdFromVars(r *http.Request) string {
 	return vars["id"]
 }
 
-type EmptyBody struct {
+type ResponseError struct {
 	message string
-	Err error
 }
+func (e *ResponseError) Error() string {
+	return e.message
+}
+
+type EmptyBody ResponseError
 
 func (e *EmptyBody) Error() string {
-	return e.Err.Error()
+	return e.message
 }
 
-func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error) {
-	//// Use http.MaxBytesReader to enforce a maximum read of 1MB from the
-	//// response body. A request body larger than that will now result in
-	//// Decode() returning a "http: request body too large" error.
-	//r.Body = http.MaxBytesReader(w, r.Body, 1048576)
-
-	// Setup the decoder and call the DisallowUnknownFields() method on it.
+func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error, int) {
 	// This will cause Decode() to return a "json: unknown field ..." error
 	// if it encounters any extra unexpected fields in the JSON. Strictly
 	// speaking, it returns an error for "keys which do not match any
@@ -232,21 +292,21 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error) {
 		// which interpolates the location of the problem to make it
 		// easier for the client to fix.
 		case errors.As(err, &syntaxError):
-			return nil, fmt.Errorf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
+			return nil, &ResponseError{fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)}, http.StatusBadRequest
 
 		// In some circumstances Decode() may also return an
 		// io.ErrUnexpectedEOF error for syntax errors in the JSON. There
 		// is an open issue regarding this at
 		// https://github.com/golang/go/issues/25956.
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			return nil, fmt.Errorf("Request body contains badly-formed JSON")
+			return nil, &ResponseError{fmt.Sprintf("Request body contains badly-formed JSON") }, http.StatusBadRequest
 
 		// Catch any type errors, like trying to assign a string in the
 		// JSON request body to a int field in our Person struct. We can
 		// interpolate the relevant field name and position into the error
 		// message to make it easier for the client to fix.
 		case errors.As(err, &unmarshalTypeError):
-			return nil, fmt.Errorf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
+			return nil, &ResponseError{fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset) }, http.StatusBadRequest
 
 		// Catch the error caused by extra unexpected fields in the request
 		// body. We extract the field name from the error message and
@@ -255,23 +315,23 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error) {
 		// turning this into a sentinel error.
 		case strings.HasPrefix(err.Error(), "json: unknown field "):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			return nil, fmt.Errorf("Request body contains unknown field %s", fieldName)
+			return nil, &ResponseError{fmt.Sprintf("Request body contains unknown field %s", fieldName) }, http.StatusBadRequest
 
 		// An io.EOF error is returned by Decode() if the request body is
 		// empty.
 		case errors.Is(err, io.EOF):
-			return nil, &EmptyBody{"Request body must not be empty", err} //, http.StatusBadRequest)
+			return nil, &EmptyBody{"Request body must not be empty" }, http.StatusBadRequest
 
 		// Catch the error caused by the request body being too large. Again
 		// there is an open issue regarding turning this into a sentinel
 		// error at https://github.com/golang/go/issues/30715.
 		case err.Error() == "http: request body too large":
-			return nil, fmt.Errorf("Request body must not be larger than 1MB") //, http.StatusRequestEntityTooLarge)
+			return nil, &ResponseError{fmt.Sprintf("Request body must not be larger than 1MB") }, http.StatusRequestEntityTooLarge
 
 		// Otherwise default to logging the error and sending a 500 Internal
 		// Server Error response.
 		default:
-			return nil, fmt.Errorf("Internal server error") //, http.StatusInternalServerError)
+			return nil, &ResponseError{fmt.Sprintf("Internal server error") }, http.StatusInternalServerError
 		}
 	}
 
@@ -281,10 +341,10 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error) {
 	// we know that there is additional data in the request body.
 	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
-		return nil, fmt.Errorf("Request body must only contain a single JSON object")
+		return nil,  &ResponseError{fmt.Sprintf("Request body must only contain a single JSON object") }, http.StatusBadRequest
 	}
 
-	return &user, nil
+	return &user, nil, http.StatusOK
 }
 
 func mergeUserObjects(userSource, userDest *store.User) {

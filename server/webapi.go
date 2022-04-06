@@ -67,7 +67,18 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
+	var  err error
 	var users []store.User
+
+	var filters *store.User
+
+	filters, err = unmarshalUserFromRequestBody(r)
+	emptyBodyErrorImpl := &EmptyBody{}
+	if err != nil && !errors.As(err, &emptyBodyErrorImpl) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 
 	vars := mux.Vars(r)
 	if vars["pagination-size"] != "" {
@@ -88,11 +99,18 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 			pageSize = 1
 		}
 
-		h.db.DB.Scopes(Paginate(page, pageSize)).Find(&users)
-
+		if filters != nil {
+			h.db.DB.Scopes(Paginate(page, pageSize)).Where(&filters).Find(&users)
+		} else {
+			h.db.DB.Scopes(Paginate(page, pageSize)).Find(&users)
+		}
 	} else {
 		// show all users
-		h.db.DB.Find(&users)
+		if filters != nil {
+			h.db.DB.Where(&filters).Find(&users)
+		} else {
+			h.db.DB.Find(&users)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -160,6 +178,15 @@ func getIdFromVars(r *http.Request) string {
 	return vars["id"]
 }
 
+type EmptyBody struct {
+	message string
+	Err error
+}
+
+func (e *EmptyBody) Error() string {
+	return e.Err.Error()
+}
+
 func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error) {
 	//// Use http.MaxBytesReader to enforce a maximum read of 1MB from the
 	//// response body. A request body larger than that will now result in
@@ -213,7 +240,7 @@ func unmarshalUserFromRequestBody(r *http.Request) (*store.User, error) {
 		// An io.EOF error is returned by Decode() if the request body is
 		// empty.
 		case errors.Is(err, io.EOF):
-			return nil, fmt.Errorf("Request body must not be empty") //, http.StatusBadRequest)
+			return nil, &EmptyBody{"Request body must not be empty", err} //, http.StatusBadRequest)
 
 		// Catch the error caused by the request body being too large. Again
 		// there is an open issue regarding turning this into a sentinel

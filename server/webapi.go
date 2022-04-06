@@ -24,11 +24,13 @@ type Handlers struct {
 
 
 func (h *Handlers) AddUser(w http.ResponseWriter, r *http.Request) {
+	h.logger.Println("request add a new user")
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
 			msg := "Content-Type header is not application/json"
 			http.Error(w, msg, http.StatusUnsupportedMediaType)
+			h.logger.Println(fmt.Sprintf("error: %s", msg))
 			return
 		}
 	}
@@ -36,24 +38,19 @@ func (h *Handlers) AddUser(w http.ResponseWriter, r *http.Request) {
 	user, err := unmarshalUserFromRequestBody(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		h.logger.Println(fmt.Sprintf("error adding user: %s", err))
 		return
 	}
 
 	h.db.DB.Save(user)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("User has been successfully added"))
-}
-
-func (h *Handlers) AllUsers(w http.ResponseWriter, r *http.Request) {
-	var users []store.User
-	h.db.DB.Find(&users)
-
-	w.Header().Set("Content-Type", "text/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(users)
+	h.logger.Println("User has been successfully added")
 }
 
 func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	h.logger.Println("request delete user")
+
 	w.Header().Set("Content-Type", "text/json; charset=utf-8")
 
 	id := getIdFromVars(r)
@@ -63,10 +60,14 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	h.db.DB.Delete(&user)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("The user with id %s has been deleted successfully", id)))
+	msg := fmt.Sprintf("User with id %s has been deleted successfully", id)
+	w.Write([]byte(msg))
+	h.logger.Println(msg)
 }
 
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
+	h.logger.Printf("request list users: ")
+
 	var  err error
 	var users []store.User
 
@@ -76,16 +77,19 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 	emptyBodyErrorImpl := &EmptyBody{}
 	if err != nil && !errors.As(err, &emptyBodyErrorImpl) {
 		w.WriteHeader(http.StatusBadRequest)
+		h.logger.Println(fmt.Sprintf("error listing users: %s", err))
 		return
 	}
 
-
 	vars := mux.Vars(r)
 	if vars["pagination-size"] != "" {
+		h.logger.Println("* with pagination")
+
 		pageSize, err := strconv.Atoi(vars["pagination-size"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Cannot get pagination limit"))
+			h.logger.Println(fmt.Sprintf("error listing users: %s", err))
 			return
 		}
 
@@ -93,6 +97,7 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Cannot get page number for pagination"))
+			h.logger.Println(fmt.Sprintf("error listing users: %s", err))
 			return
 		}
 		if pageSize <= 0 {
@@ -100,21 +105,27 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if filters != nil {
+			h.logger.Println("* with filtering")
 			h.db.DB.Scopes(Paginate(page, pageSize)).Where(&filters).Find(&users)
 		} else {
+			h.logger.Println("* without filtering")
 			h.db.DB.Scopes(Paginate(page, pageSize)).Find(&users)
 		}
 	} else {
-		// show all users
+		// show without pagination
+		h.logger.Println("* without pagination")
 		if filters != nil {
+			h.logger.Println("* with filtering")
 			h.db.DB.Where(&filters).Find(&users)
 		} else {
+			h.logger.Println("* without filtering")
 			h.db.DB.Find(&users)
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&users)
+	h.logger.Println("users have been listed successfully")
 }
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
@@ -125,6 +136,8 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 }
 
 func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
+	h.logger.Println("request list a single user")
+
 	w.Header().Set("Content-Type", "text/json; charset=utf-8")
 
 	id := getIdFromVars(r)
@@ -133,6 +146,7 @@ func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&user)
+	h.logger.Println("user has been listed successfully")
 }
 
 func (h *Handlers) Heartbeat(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +155,8 @@ func (h *Handlers) Heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	h.logger.Println("update user request")
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	id := getIdFromVars(r)
@@ -149,7 +165,9 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	if &user == nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Cannot find user with id %s", id)))
+		msg := fmt.Sprintf("Cannot find user with id %s", id)
+		w.Write([]byte(msg))
+		h.logger.Println(fmt.Sprintf("error updating user: %s", msg))
 		return
 	}
 
@@ -163,7 +181,9 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	h.db.DB.Save(user)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("User with id %s has been updated successfully", id)))
+	msg := fmt.Sprintf("User with id %s has been updated successfully", id)
+	w.Write([]byte(msg))
+	h.logger.Println(msg)
 }
 
 func NewHandlers(logger *log.Logger, db *store.DB) *Handlers {
@@ -294,6 +314,7 @@ func mergeUserObjects(userSource, userDest *store.User) {
 }
 
 func (h *Handlers) SetupRouts() *mux.Router {
+	h.logger.Println("setting router and handle function")
 	router := mux.NewRouter()
 	router.HandleFunc("/users", h.GetUsers).Methods(http.MethodGet) // without pagination
 	router.HandleFunc("/users/{pagination-size:[0-9]+}/{page:[0-9]+}", h.GetUsers).Methods(http.MethodGet) // with pagination

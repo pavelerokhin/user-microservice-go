@@ -8,6 +8,7 @@ import (
 )
 
 func New(mux *mux.Router, serviceAddr string) *http.Server {
+
 	tlsConfig := &tls.Config {
 		PreferServerCipherSuites: true,
 		CurvePreferences: []tls.CurveID{

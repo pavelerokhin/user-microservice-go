@@ -19,7 +19,7 @@ type serv struct {
 	Logger *log.Logger
 }
 
-func New(mux *mux.Router, serviceAddr string, logger *log.Logger) Server {
+func New(mux *mux.Router, serviceAddr string, logger *log.Logger) *Server {
 	//tlsConfig := &tls.Config{
 	//	PreferServerCipherSuites: true,
 	//	CurvePreferences: []tls.CurveID{

@@ -40,5 +40,5 @@ func main() {
 		portPtr = fmt.Sprintf(":%s", portPtr)
 	}
 
-	userRouter.SERVE(fmt.Sprintf(":%v", portPtr))
+	userRouter.SERVE(portPtr)
 }

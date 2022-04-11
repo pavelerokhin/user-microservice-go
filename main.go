@@ -6,31 +6,39 @@ import (
 	"log"
 	"os"
 
-	"./server"
-	"./store"
+	"github.com/pavelerokhin/user-microservice-go/controller"
+	"github.com/pavelerokhin/user-microservice-go/repository"
+	"github.com/pavelerokhin/user-microservice-go/router"
+	"github.com/pavelerokhin/user-microservice-go/service"
+)
+
+var (
+	userRouter     router.Router
+	userRepository repository.UserRepository
+	userService    service.UserService
+	userController controller.UserController
 )
 
 func main() {
-	portPtr := flag.String("port", "8080", "Server port. Default: 8080")
-	flag.Parse()
-
 	var err error
+
 	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags|log.Lshortfile)
 
-	logger.Println("preparing SQLite database")
-	db, err := store.NewSQLite()
-	if err != nil {
-		logger.Fatalln(err)
-	}
-	logger.Println("SQLite database prepared")
+	userRepository, err = repository.NewSqliteRepo(logger)
+	userService = service.New(userRepository, logger)
+	userController = controller.New(userService, logger)
 
-	h := server.NewHandlers(logger, db)
-	router := h.SetupRouts()
-	srv := server.New(router, fmt.Sprintf(":%s",*portPtr))
-
-	logger.Printf("start to serve localhost at port %s\n", *portPtr)
-	err = srv.ListenAndServe()
+	userRouter = router.NewMuxRouter(logger)
 	if err != nil {
-		logger.Fatalf("server failed to start %v\n", err)
+		logger.Fatal(err)
 	}
+
+	portPtr := *flag.String("port", "8080", "Server port. Default: 8080")
+	flag.Parse()
+
+	if portPtr != "" {
+		portPtr = fmt.Sprintf(":%s", portPtr)
+	}
+
+	userRouter.SERVE(fmt.Sprintf(":%v", portPtr))
 }

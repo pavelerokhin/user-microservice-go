@@ -14,13 +14,13 @@ const (
 )
 
 func writeResponseJson(r http.ResponseWriter, msg string) {
-	_, _ = r.Write([]byte(errs.FerrJson(msg)))
+	_, _ = r.Write([]byte(errs.FErrJSON(msg)))
 }
 
 func tryToResponseJsonError(response http.ResponseWriter, logger *log.Logger, msg string) {
 	logger.Println(msg)
 	response.WriteHeader(http.StatusInternalServerError)
-	err := json.NewEncoder(response).Encode(errs.FerrJson(msg))
+	err := json.NewEncoder(response).Encode(errs.FErrJSON(msg))
 	if err != nil {
 		logger.Println(errMsgEncodeKO)
 		writeResponseJson(response, errMsgEncodeKO)
@@ -31,7 +31,7 @@ func tryToResponseJsonError(response http.ResponseWriter, logger *log.Logger, ms
 // this function was duplicated to avoid using reflection
 func tryToResponseMsgOK(response http.ResponseWriter, logger *log.Logger, msg string) {
 	logger.Println(msg)
-	err := json.NewEncoder(response).Encode(errs.FerrJson(msg))
+	err := json.NewEncoder(response).Encode(errs.FErrJSON(msg))
 	if err != nil {
 		logger.Println(errMsgEncodeOK)
 		response.WriteHeader(http.StatusInternalServerError)

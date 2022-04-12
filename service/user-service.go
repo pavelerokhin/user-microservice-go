@@ -70,7 +70,8 @@ func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
 
 	filters, err, statusCode := unmarshalUserFromRequestBody(request)
 
-	if err != nil && !errors.Is(err, &errs.EmptyBody{}) {
+	errEmptyBody := &errs.EmptyBody{}
+	if err != nil && !errors.As(err, &errEmptyBody) {
 		return nil, fmt.Errorf("error while parsing filter parameters: %v", err), statusCode
 	}
 

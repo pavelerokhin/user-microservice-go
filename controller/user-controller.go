@@ -18,7 +18,6 @@ type controller struct {
 type UserController interface {
 	AddUser(response http.ResponseWriter, request *http.Request)
 	DeleteUser(response http.ResponseWriter, request *http.Request)
-	CreateUser(response http.ResponseWriter, request *http.Request)
 	GetUser(response http.ResponseWriter, request *http.Request)
 	GetAllUsers(response http.ResponseWriter, request *http.Request)
 	UpdateUser(response http.ResponseWriter, request *http.Request)
@@ -35,21 +34,21 @@ func (c controller) AddUser(response http.ResponseWriter, request *http.Request)
 	err := json.NewDecoder(request.Body).Decode(&user)
 	if err != nil {
 		msg := fmt.Sprintf("error unmarshalling the request: %v", err)
-		tryToResponseJsonError(response, c.Logger, msg)
+		tryToResponseJsonError(response, c.Logger, msg, 0)
 		return
 	}
 
 	errValidation := c.Service.Validate(&user)
 	if errValidation != nil {
 		msg := fmt.Sprintf("error validating the request: %v", errValidation.Error())
-		tryToResponseJsonError(response, c.Logger, msg)
+		tryToResponseJsonError(response, c.Logger, msg, 0)
 		return
 	}
 
 	userAdded, errC := c.Service.Add(&user)
 	if errC != nil {
 		msg := "error saving user"
-		tryToResponseJsonError(response, c.Logger, msg)
+		tryToResponseJsonError(response, c.Logger, msg, 0)
 		return
 	}
 
@@ -62,8 +61,7 @@ func (c controller) DeleteUser(response http.ResponseWriter, request *http.Reque
 	id, err := c.Service.Delete(request)
 	if err != nil {
 		msg := fmt.Sprintf("error while deleting a User with id %v: %v", id, err)
-		c.Logger.Println(msg)
-		tryToResponseJsonError(response, c.Logger, msg)
+		tryToResponseJsonError(response, c.Logger, msg, 0)
 		return
 	}
 
@@ -71,14 +69,16 @@ func (c controller) DeleteUser(response http.ResponseWriter, request *http.Reque
 	tryToResponseMsgOK(response, c.Logger, msg)
 }
 
-func (c controller) CreateUser(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
-
-}
-
 func (c controller) GetUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
+	user, err, statusCode := c.Service.Get(request)
+	if err != nil {
+		msg := fmt.Sprintf("error getting user from the database: %v", err)
+		tryToResponseJsonError(response, c.Logger, msg, statusCode)
+		return
+	}
 
+	tryToResponseUserOK(response, c.Logger, user)
 }
 
 func (c controller) GetAllUsers(response http.ResponseWriter, request *http.Request) {
@@ -86,9 +86,8 @@ func (c controller) GetAllUsers(response http.ResponseWriter, request *http.Requ
 
 	users, err, statusCode := c.Service.GetAll(request)
 	if err != nil {
-		response.WriteHeader(statusCode)
 		msg := fmt.Sprintf("error getting users from the database: %v", err)
-		tryToResponseJsonError(response, c.Logger, msg)
+		tryToResponseJsonError(response, c.Logger, msg, statusCode)
 		return
 	}
 

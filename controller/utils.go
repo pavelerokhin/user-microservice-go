@@ -17,9 +17,14 @@ func writeResponseJson(r http.ResponseWriter, msg string) {
 	_, _ = r.Write([]byte(errs.FErrJSON(msg)))
 }
 
-func tryToResponseJsonError(response http.ResponseWriter, logger *log.Logger, msg string) {
+func tryToResponseJsonError(response http.ResponseWriter, logger *log.Logger, msg string, statusCode int) {
 	logger.Println(msg)
-	response.WriteHeader(http.StatusInternalServerError)
+	if statusCode == 0 {
+		response.WriteHeader(http.StatusInternalServerError)
+	} else {
+		response.WriteHeader(statusCode)
+	}
+
 	err := json.NewEncoder(response).Encode(errs.FErrJSON(msg))
 	if err != nil {
 		logger.Println(errMsgEncodeKO)

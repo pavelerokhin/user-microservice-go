@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/pavelerokhin/cleanarchitecture-restapi-go/errors"
 	"github.com/pavelerokhin/user-microservice-go/model"
 	"github.com/pavelerokhin/user-microservice-go/service"
 )
@@ -35,26 +34,26 @@ func (c controller) AddUser(response http.ResponseWriter, request *http.Request)
 	var user model.User
 	err := json.NewDecoder(request.Body).Decode(&user)
 	if err != nil {
-		response.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(response).Encode(errors.ServiceError{Message: "error unmarshalling the request"})
+		msg := fmt.Sprintf("error unmarshalling the request: %v", err)
+		tryToResponseJsonError(response, c.Logger, msg)
 		return
 	}
 
-	errV := c.Service.Validate(&user)
-	if errV != nil {
-		response.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(response).Encode(errors.ServiceError{Message: errV.Error()})
+	errValidation := c.Service.Validate(&user)
+	if errValidation != nil {
+		msg := fmt.Sprintf("error validating the request: %v", errValidation.Error())
+		tryToResponseJsonError(response, c.Logger, msg)
 		return
 	}
 
-	postC, errC := c.Service.Add(&user)
+	userAdded, errC := c.Service.Add(&user)
 	if errC != nil {
-		response.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(response).Encode(errors.ServiceError{Message: "error saving user"})
+		msg := "error saving user"
+		tryToResponseJsonError(response, c.Logger, msg)
 		return
 	}
-	response.WriteHeader(http.StatusOK)
-	json.NewEncoder(response).Encode(postC)
+
+	tryToResponseUserOK(response, c.Logger, userAdded)
 }
 
 func (c controller) DeleteUser(response http.ResponseWriter, request *http.Request) {
@@ -62,30 +61,14 @@ func (c controller) DeleteUser(response http.ResponseWriter, request *http.Reque
 
 	id, err := c.Service.Delete(request)
 	if err != nil {
-		response.WriteHeader(http.StatusInternalServerError)
-		msg := fmt.Sprintf("{\"error\": \"error while deleting a User with id %v: %v\"}", id, err)
+		msg := fmt.Sprintf("error while deleting a User with id %v: %v", id, err)
 		c.Logger.Println(msg)
-		_, _ = response.Write([]byte(msg))
-
+		tryToResponseJsonError(response, c.Logger, msg)
 		return
 	}
 
-	_, err = response.Write([]byte(fmt.Sprintf("{\"message\": \"user with id %v has beeen deleted successfully\"}", id)))
-	if err != nil {
-		c.Logger.Printf("error: User has been successfully deleted, but there's a problem returning the response: %v", err)
-
-		response.WriteHeader(http.StatusInternalServerError)
-		msg := fmt.Sprintf("{\"error\": \"User with id %v has been successfully deleted, but there's a problem returning the response: %v\"}", id, err)
-		c.Logger.Println(msg)
-		_, _ = response.Write([]byte(msg))
-
-		return
-	}
-
-	response.WriteHeader(http.StatusOK)
-	msg := fmt.Sprintf("{\"error\": \"User with id %v has been deleted successfully\"}", id)
-	c.Logger.Println(msg)
-	_, _ = response.Write([]byte(msg))
+	msg := fmt.Sprintf("user with id %v has beeen deleted successfully", id)
+	tryToResponseMsgOK(response, c.Logger, msg)
 }
 
 func (c controller) CreateUser(response http.ResponseWriter, request *http.Request) {
@@ -104,34 +87,25 @@ func (c controller) GetAllUsers(response http.ResponseWriter, request *http.Requ
 	users, err, statusCode := c.Service.GetAll(request)
 	if err != nil {
 		response.WriteHeader(statusCode)
-		json.NewEncoder(response).Encode(errors.ServiceError{Message: fmt.Sprintf("error getting users from the database: %v", err)})
+		msg := fmt.Sprintf("error getting users from the database: %v", err)
+		tryToResponseJsonError(response, c.Logger, msg)
 		return
 	}
 
-	response.WriteHeader(http.StatusOK)
-	json.NewEncoder(response).Encode(users)
+	tryToResponseUsersOK(response, c.Logger, users)
 }
 
 func (c controller) UpdateUser(response http.ResponseWriter, request *http.Request) {
 	c.Logger.Println("update user request")
 	response.Header().Set("Content-Type", "application/json")
 
-	user, err := c.Service.Update(request)
+	user, err, statusCode := c.Service.Update(request)
 
 	if err != nil {
-		_, err := response.Write([]byte(fmt.Sprintf("{\"error\":\"error returning the reponse: %v\"}", err)))
-		if err != nil {
-			c.Logger.Println(fmt.Sprintf("error returning the reponse: %v", err))
-			return
-		}
+		response.WriteHeader(statusCode)
+		msg := fmt.Sprintf("error returning the reponse: %v", err)
+		tryToResponseMsgOK(response, c.Logger, msg)
 	}
 
-	err = json.NewEncoder(response).Encode(user)
-	if err != nil {
-		response.WriteHeader(http.StatusInternalServerError)
-		c.Logger.Println(fmt.Sprintf("user has been updated, but we had an error returning the reponse to the client: %v", err))
-		return
-	}
-	response.WriteHeader(http.StatusOK)
-
+	tryToResponseUserOK(response, c.Logger, user)
 }

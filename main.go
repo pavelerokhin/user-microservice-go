@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/pavelerokhin/user-microservice-go/controller"
@@ -27,7 +28,6 @@ func main() {
 	userRepository, err = repository.NewSqliteRepo(logger)
 	userService = service.New(userRepository, logger)
 	userController = controller.New(userService, logger)
-
 	userRouter = router.NewMuxRouter(logger)
 	if err != nil {
 		logger.Fatal(err)
@@ -39,6 +39,17 @@ func main() {
 	if portPtr != "" {
 		portPtr = fmt.Sprintf(":%s", portPtr)
 	}
+
+	userRouter.GET("/users", userController.GetAllUsers)                                  // without pagination
+	userRouter.GET("/users/{page-size:[0-9]+}/{page:[0-9]+}", userController.GetAllUsers) // with pagination
+	userRouter.POST("/user", userController.AddUser)
+	userRouter.POST("/user/{id}", userController.UpdateUser)
+	userRouter.POST("/user/{id}", userController.GetUser)
+	userRouter.DELETE("/user/{id}", userController.DeleteUser)
+
+	userRouter.GET("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	userRouter.SERVE(portPtr)
 }

@@ -28,15 +28,15 @@ func NewSqliteRepo(l *log.Logger) (UserRepository, error) {
 	return &repo{DB: sql, Logger: l}, nil
 }
 
-func (r *repo) Add(u *model.User) (*model.User, error) {
+func (r *repo) Add(user *model.User) (*model.User, error) {
 	r.Logger.Println("request add a new user to SQLite database")
-	tx := r.DB.Create(&u)
+	tx := r.DB.Create(&user)
 	if tx.Error != nil {
 		r.Logger.Fatalf("Failed adding a new post: %v", tx.Error)
 		return nil, tx.Error
 	}
 
-	return u, nil
+	return user, nil
 }
 
 func (r *repo) Delete(id int) error {

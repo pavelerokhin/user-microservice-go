@@ -60,12 +60,12 @@ func (c controller) DeleteUser(response http.ResponseWriter, request *http.Reque
 
 	id, err := c.Service.Delete(request)
 	if err != nil {
-		msg := fmt.Sprintf("error while deleting a User with id %v: %v", id, err)
+		msg := fmt.Sprintf("error while deleting a User with ID %v: %v", id, err)
 		tryToResponseJsonError(response, c.Logger, msg, 0)
 		return
 	}
 
-	msg := fmt.Sprintf("user with id %v has beeen deleted successfully", id)
+	msg := fmt.Sprintf("user with ID %v has beeen deleted successfully", id)
 	tryToResponseMsgOK(response, c.Logger, msg)
 }
 

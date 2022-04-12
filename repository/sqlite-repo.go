@@ -40,7 +40,7 @@ func (r *repo) Add(user *model.User) (*model.User, error) {
 }
 
 func (r *repo) Delete(id int) error {
-	r.Logger.Printf("request delete user with iud %s from SQLite database", id)
+	r.Logger.Printf("request delete user with ID %s from SQLite database", id)
 
 	var user model.User
 	tx := r.DB.Where("id = ?", id).Find(&user)
@@ -48,15 +48,15 @@ func (r *repo) Delete(id int) error {
 		tx = r.DB.Delete(&user)
 
 		if tx.Error != nil {
-			r.Logger.Printf("error while deleting user with id %v: %v", id, tx.Error)
+			r.Logger.Printf("error while deleting user with ID %v: %v", id, tx.Error)
 		} else {
-			r.Logger.Printf("user with id %v has been deleted successfully", id)
+			r.Logger.Printf("user with ID %v has been deleted successfully", id)
 		}
 
 		return tx.Error
 	}
 
-	err := fmt.Errorf("error: cannot find user with id %v", id)
+	err := fmt.Errorf("error: cannot find user with ID %v", id)
 	r.Logger.Println(err)
 
 	return err
@@ -72,7 +72,7 @@ func (r *repo) Get(id int) (*model.User, error) {
 		return user, nil
 	}
 
-	return nil, fmt.Errorf("user with id %v not found", id)
+	return nil, fmt.Errorf("user with ID %v not found", id)
 }
 
 func (r *repo) GetAll(filters *model.User, pageSize, page int) ([]model.User, error) {
@@ -113,7 +113,7 @@ func (r *repo) Update(user *model.User) (*model.User, error) {
 	if tx.RowsAffected != 0 {
 		r.Logger.Printf("user has been listed successfully in SQLite database")
 	} else {
-		err = fmt.Errorf("there are some problems updating user with id %v", user.ID)
+		err = fmt.Errorf("there are some problems updating user with ID %v", user.ID)
 		r.Logger.Printf(err.Error())
 	}
 

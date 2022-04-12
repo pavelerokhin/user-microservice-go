@@ -68,37 +68,50 @@ func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
 	s.Logger.Println("request list users")
 	var filters *model.User
 
-	filters, err, statusCode := unmarshalUserFromRequestBody(request)
+	filters, err, statusCode := unmarshalUserFromRequest(request)
 
 	errEmptyBody := &errs.EmptyBody{}
 	if err != nil && !errors.As(err, &errEmptyBody) {
 		return nil, fmt.Errorf("error while parsing filter parameters: %v", err), statusCode
 	}
 
+	var pageSize, page int
 	vars := mux.Vars(request)
-	pageSize, err := strconv.Atoi(vars["page-size"])
-	if err != nil {
-		msg := fmt.Errorf("cannot get pagination limit: %v", err)
-		return nil, msg, http.StatusInternalServerError
+	if vars["page-size"] != "" {
+		pageSize, err = strconv.Atoi(vars["page-size"])
+		if err != nil {
+			msg := fmt.Errorf("cannot get pagination limit: %v", err)
+			return nil, msg, http.StatusInternalServerError
+		}
+
+		page, err = strconv.Atoi(vars["page"])
+		if err != nil {
+			msg := fmt.Errorf("cannot get page: %v", err)
+			return nil, msg, http.StatusInternalServerError
+		}
+
+		if pageSize <= 0 {
+			pageSize = 1
+		}
+
+		if page <= 0 {
+			pageSize = 1
+		}
 	}
 
-	page, err := strconv.Atoi(vars["page"])
-	if err != nil {
-		msg := fmt.Errorf("cannot get page: %v", err)
-		return nil, msg, http.StatusInternalServerError
+	msg := "try to list users "
+	if pageSize == 0 {
+		msg += "without pagination "
+	} else {
+		msg += "with pagination "
+	}
+	if filters == nil {
+		msg += "without filtering"
+	} else {
+		msg += "with filtering"
 	}
 
-	if pageSize <= 0 {
-		pageSize = 1
-	}
-
-	if page <= 0 {
-		pageSize = 1
-	}
-
-	s.Logger.Printf("try to list users %v pagination % filtering",
-		withWithoutSuffix(pageSize),
-		withWithoutSuffix(filters))
+	s.Logger.Printf(msg)
 
 	allUsers, err := s.Repo.GetAll(filters, pageSize, page)
 	if err != nil {
@@ -125,7 +138,7 @@ func (s *service) Update(request *http.Request) (*model.User, error, int) {
 			http.StatusBadRequest
 	}
 
-	newUser, err, statusCode := unmarshalUserFromRequestBody(request)
+	newUser, err, statusCode := unmarshalUserFromRequest(request)
 	if err != nil {
 		return nil, fmt.Errorf("error updating user: %s", err), statusCode
 	}

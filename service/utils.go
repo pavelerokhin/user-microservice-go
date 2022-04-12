@@ -46,7 +46,7 @@ func mergeUserObjects(userSource, userDest *model.User) {
 	}
 }
 
-func unmarshalUserFromRequestBody(r *http.Request) (*model.User, error, int) {
+func unmarshalUserFromRequest(r *http.Request) (*model.User, error, int) {
 	// This will cause Decode() to return a "json: unknown field ..." error
 	// if it encounters any extra unexpected fields in the JSON. Strictly
 	// speaking, it returns an error for "keys which do not match any
@@ -65,14 +65,17 @@ func unmarshalUserFromRequestBody(r *http.Request) (*model.User, error, int) {
 		// which interpolates the location of the problem to make it
 		// easier for the client to fix.
 		case errors.As(err, &syntaxError):
-			return nil, &errs.ResponseError{Message: fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)}, http.StatusBadRequest
+			return nil, &errs.ResponseError{
+					Message: fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)},
+				http.StatusBadRequest
 
 		// In some circumstances Decode() may also return an
 		// io.ErrUnexpectedEOF error for syntax errs in the JSON. There
 		// is an open issue regarding this at
 		// https://github.com/golang/go/issues/25956.
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			return nil, &errs.ResponseError{Message: fmt.Sprintf("Request body contains badly-formed JSON")}, http.StatusBadRequest
+			return nil, &errs.ResponseError{
+				Message: fmt.Sprintf("Request body contains badly-formed JSON")}, http.StatusBadRequest
 
 		// Catch any type errs, like trying to assign a string in the
 		// JSON request body to an int field in our Person struct. We can
@@ -118,12 +121,4 @@ func unmarshalUserFromRequestBody(r *http.Request) (*model.User, error, int) {
 	}
 
 	return &user, nil, http.StatusOK
-}
-
-func withWithoutSuffix(value interface{}) string {
-	if value == nil || value == 0 {
-		return "without"
-	}
-
-	return "with"
 }

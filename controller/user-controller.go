@@ -34,21 +34,21 @@ func (c controller) AddUser(response http.ResponseWriter, request *http.Request)
 	err := json.NewDecoder(request.Body).Decode(&user)
 	if err != nil {
 		msg := fmt.Sprintf("error unmarshalling the request: %v", err)
-		tryToResponseJsonError(response, c.Logger, msg, 0)
+		tryToResponseJSONError(response, c.Logger, msg, 0)
 		return
 	}
 
 	errValidation := c.Service.Validate(&user)
 	if errValidation != nil {
 		msg := fmt.Sprintf("error validating the request: %v", errValidation.Error())
-		tryToResponseJsonError(response, c.Logger, msg, 0)
+		tryToResponseJSONError(response, c.Logger, msg, 0)
 		return
 	}
 
 	userAdded, errC := c.Service.Add(&user)
 	if errC != nil {
 		msg := "error saving user"
-		tryToResponseJsonError(response, c.Logger, msg, 0)
+		tryToResponseJSONError(response, c.Logger, msg, 0)
 		return
 	}
 
@@ -61,7 +61,7 @@ func (c controller) DeleteUser(response http.ResponseWriter, request *http.Reque
 	id, err := c.Service.Delete(request)
 	if err != nil {
 		msg := fmt.Sprintf("error while deleting a User with ID %v: %v", id, err)
-		tryToResponseJsonError(response, c.Logger, msg, 0)
+		tryToResponseJSONError(response, c.Logger, msg, 0)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (c controller) GetUser(response http.ResponseWriter, request *http.Request)
 	user, err, statusCode := c.Service.Get(request)
 	if err != nil {
 		msg := fmt.Sprintf("error getting user from the database: %v", err)
-		tryToResponseJsonError(response, c.Logger, msg, statusCode)
+		tryToResponseJSONError(response, c.Logger, msg, statusCode)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (c controller) GetAllUsers(response http.ResponseWriter, request *http.Requ
 	users, err, statusCode := c.Service.GetAll(request)
 	if err != nil {
 		msg := fmt.Sprintf("error getting users from the database: %v", err)
-		tryToResponseJsonError(response, c.Logger, msg, statusCode)
+		tryToResponseJSONError(response, c.Logger, msg, statusCode)
 		return
 	}
 

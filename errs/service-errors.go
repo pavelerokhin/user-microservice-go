@@ -1,7 +1,7 @@
 package errs
 
 type ResponseError struct {
-	Message string
+	Message string `json:"message"`
 }
 
 func (e *ResponseError) Error() string {

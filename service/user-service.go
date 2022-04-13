@@ -91,11 +91,13 @@ func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
 		}
 
 		if pageSize <= 0 {
-			pageSize = 1
+			msg := fmt.Errorf("page size cannot be less then 1")
+			return nil, msg, http.StatusBadRequest
 		}
 
 		if page <= 0 {
-			pageSize = 1
+			msg := fmt.Errorf("cannot get page less then 1")
+			return nil, msg, http.StatusBadRequest
 		}
 	}
 

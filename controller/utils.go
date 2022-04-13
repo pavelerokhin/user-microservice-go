@@ -17,6 +17,10 @@ func writeResponseJSON(response http.ResponseWriter, msg string) error {
 	return json.NewEncoder(response).Encode(errs.ResponseError{Message: msg})
 }
 
+// tryToResponseJSONError is a utility function that tries to write a response (error) message formatted
+// as an JSON to the client. In case it couldn't write the message, it tries to return a standard errMsgEncodeKO
+// message to the client. statusCode of the response can be specified. In case statusCode is 0,
+// the response is considered to be http.StatusInternalServerError (500)
 func tryToResponseJSONError(response http.ResponseWriter, logger *log.Logger, msg string, statusCode int) {
 	logger.Println(msg)
 	if statusCode == 0 {
@@ -33,7 +37,8 @@ func tryToResponseJSONError(response http.ResponseWriter, logger *log.Logger, ms
 	}
 }
 
-// this function was duplicated to avoid using reflection
+// tryToResponseMsgOK is similar to tryToResponseMsgKO, but is supposed to return the response message
+// in cases when no error has occurred. This duplicates tryToResponseMsgOK to avoid using reflection
 func tryToResponseMsgOK(response http.ResponseWriter, logger *log.Logger, msg string) {
 	logger.Println(msg)
 	err := writeResponseJSON(response, msg)
@@ -46,7 +51,7 @@ func tryToResponseMsgOK(response http.ResponseWriter, logger *log.Logger, msg st
 	response.WriteHeader(http.StatusOK)
 }
 
-// this function was duplicated to avoid using reflection
+// tryToResponseUserOK duplicates tryToResponseMsgOK; it marshals the User object in the response
 func tryToResponseUserOK(response http.ResponseWriter, logger *log.Logger, msg *model.User) {
 	logger.Println(msg)
 	err := json.NewEncoder(response).Encode(msg)
@@ -59,7 +64,7 @@ func tryToResponseUserOK(response http.ResponseWriter, logger *log.Logger, msg *
 	response.WriteHeader(http.StatusOK)
 }
 
-// this function was duplicated to avoid using reflection
+// tryToResponseUserOK duplicates tryToResponseMsgOK; it marshals the slice of User objects in the response
 func tryToResponseUsersOK(response http.ResponseWriter, logger *log.Logger, msg []model.User) {
 	logger.Println(msg)
 	err := json.NewEncoder(response).Encode(msg)

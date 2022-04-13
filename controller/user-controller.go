@@ -1,3 +1,5 @@
+// pkg implements the controller layer
+
 package controller
 
 import (

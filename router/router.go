@@ -1,3 +1,6 @@
+// pkg represents an abstraction on routers of the microservice
+// Mux and Chi routers are available
+
 package router
 
 import "net/http"

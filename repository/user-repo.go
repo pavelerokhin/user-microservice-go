@@ -1,3 +1,6 @@
+// pkg represents the repository layer of the microservice.
+// SQLite and MongoDB databases are available
+
 package repository
 
 import (

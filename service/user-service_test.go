@@ -16,5 +16,5 @@ func TestValidateEmptyUser(t *testing.T) {
 	err := testService.Validate(nil)
 
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "the user object is empty")
+	assert.Equal(t, "the user object is empty", err.Error())
 }

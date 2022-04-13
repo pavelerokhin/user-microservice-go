@@ -1,3 +1,5 @@
+// pkg represents the service layer of the microservice
+
 package service
 
 import (

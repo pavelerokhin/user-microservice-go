@@ -1,9 +1,10 @@
 package router
 
 import (
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type muxRouter struct {
@@ -28,6 +29,6 @@ func (mr *muxRouter) POST(uri string, f func(w http.ResponseWriter, r *http.Requ
 }
 
 func (mr *muxRouter) SERVE(port string) {
-	mr.Logger.Printf("Mux HTTP server running on posrt %v", port)
+	mr.Logger.Printf("Mux HTTP server running on port %v", port)
 	mr.Logger.Fatalln(http.ListenAndServe(port, mr.MuxDispatcher))
 }

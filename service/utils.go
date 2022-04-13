@@ -15,35 +15,9 @@ import (
 	"github.com/pavelerokhin/user-microservice-go/model"
 )
 
-func getIdFromRequestVars(request *http.Request) (int, error) {
+func getIDFromRequestVars(request *http.Request) (int, error) {
 	vars := mux.Vars(request)
 	return strconv.Atoi(vars["id"])
-}
-
-func mergeUserObjects(userSource, userDest *model.User) {
-	if userDest.FirstName != "" {
-		userSource.FirstName = userDest.FirstName
-	}
-
-	if userDest.LastName != "" {
-		userSource.LastName = userDest.LastName
-	}
-
-	if userDest.Nickname != "" {
-		userSource.Nickname = userDest.Nickname
-	}
-
-	if userDest.Country != "" {
-		userSource.Country = userDest.Country
-	}
-
-	if userDest.Email != "" {
-		userSource.Email = userDest.Email
-	}
-
-	if userDest.Password != "" {
-		userSource.Password = userDest.Password
-	}
 }
 
 func unmarshalUserFromRequest(r *http.Request) (*model.User, error, int) {

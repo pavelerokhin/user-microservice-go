@@ -33,23 +33,26 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	portPtr := *flag.String("port", "8080", "Server port. Default: 8080")
+	// get port from the app parameters
+	var portPtr string
+	flag.StringVar(&portPtr, "port", "8080", "Server port. Default: 8080")
 	flag.Parse()
 
 	if portPtr != "" {
 		portPtr = fmt.Sprintf(":%s", portPtr)
 	}
 
+	// setup routes
 	userRouter.GET("/users", userController.GetAllUsers)                                  // without pagination
 	userRouter.GET("/users/{page-size:[0-9]+}/{page:[0-9]+}", userController.GetAllUsers) // with pagination
 	userRouter.POST("/user", userController.AddUser)
 	userRouter.POST("/user/{id:[0-9]+}", userController.UpdateUser)
 	userRouter.GET("/user/{id:[0-9]+}", userController.GetUser)
 	userRouter.DELETE("/user/{id:[0-9]+}", userController.DeleteUser)
-
 	userRouter.GET("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	// listen and serve
 	userRouter.SERVE(portPtr)
 }

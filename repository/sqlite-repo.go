@@ -81,14 +81,13 @@ func (r *repo) GetAll(filters *model.User, pageSize, page int) ([]model.User, er
 	var users []model.User
 	var tx *gorm.DB
 
-	if pageSize > 0 {
-		if filters != nil {
+	if pageSize > 0 { // pagination has been requested
+		if filters != nil { // filtering has been requested
 			tx = r.DB.Scopes(paginate(page, pageSize)).Where(&filters).Find(&users)
-		} else {
+		} else { // no filtering
 			tx = r.DB.Scopes(paginate(page, pageSize)).Find(&users)
 		}
-	} else {
-		// show without pagination
+	} else { // no pagination
 		if filters != nil {
 			tx = r.DB.Where(&filters).Find(&users)
 		} else {

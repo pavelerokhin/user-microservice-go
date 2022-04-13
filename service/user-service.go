@@ -145,9 +145,9 @@ func (s *service) Update(request *http.Request) (*model.User, error, int) {
 		return nil, fmt.Errorf("error updating user: %s", err), statusCode
 	}
 
-	mergeUserObjects(user, newUser)
+	//mergeUserObjects(user, newUser)
 
-	user, err = s.Repo.Add(user)
+	user, err = s.Repo.Update(user, newUser)
 	if err != nil {
 		return nil, fmt.Errorf("error while updating user with ID %v: %v", id, err),
 			http.StatusInternalServerError

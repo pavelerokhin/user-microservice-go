@@ -11,7 +11,7 @@ type UserRepository interface {
 	Delete(id int) error
 	Get(id int) (*model.User, error)
 	GetAll(filters *model.User, pageSize, page int) ([]model.User, error)
-	Update(user *model.User) (*model.User, error)
+	Update(user, newUser *model.User) (*model.User, error)
 }
 
 type repo struct {

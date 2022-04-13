@@ -105,9 +105,9 @@ func (r *repo) GetAll(filters *model.User, pageSize, page int) ([]model.User, er
 	return users, tx.Error
 }
 
-func (r *repo) Update(user *model.User) (*model.User, error) {
+func (r *repo) Update(user, newUser *model.User) (*model.User, error) {
 	r.Logger.Printf("elaborating update request in SQLite database")
-	tx := r.DB.Save(&user)
+	tx := r.DB.Model(user).Updates(newUser)
 
 	var err error
 	if tx.RowsAffected != 0 {

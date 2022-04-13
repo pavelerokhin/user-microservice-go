@@ -2,10 +2,11 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/pavelerokhin/user-microservice-go/errs"
-	"github.com/pavelerokhin/user-microservice-go/model"
 	"log"
 	"net/http"
+
+	"github.com/pavelerokhin/user-microservice-go/errs"
+	"github.com/pavelerokhin/user-microservice-go/model"
 )
 
 const (
@@ -21,7 +22,7 @@ func writeResponseJSON(response http.ResponseWriter, msg string) error {
 // as an JSON to the client. In case it couldn't write the message, it tries to return a standard errMsgEncodeKO
 // message to the client. statusCode of the response can be specified. In case statusCode is 0,
 // the response is considered to be http.StatusInternalServerError (500)
-func tryToResponseJSONError(response http.ResponseWriter, logger *log.Logger, msg string, statusCode int) {
+func tryToResponseJSONError(response http.ResponseWriter, logger *log.Logger, statusCode int, msg string) {
 	logger.Println(msg)
 	if statusCode == 0 {
 		response.WriteHeader(http.StatusInternalServerError)

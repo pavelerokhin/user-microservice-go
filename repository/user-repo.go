@@ -4,9 +4,11 @@
 package repository
 
 import (
-	"github.com/pavelerokhin/user-microservice-go/model"
-	"gorm.io/gorm"
 	"log"
+
+	"gorm.io/gorm"
+
+	"github.com/pavelerokhin/user-microservice-go/model"
 )
 
 type UserRepository interface {

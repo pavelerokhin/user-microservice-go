@@ -5,10 +5,11 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 
 	"github.com/pavelerokhin/user-microservice-go/errs"
 	"github.com/pavelerokhin/user-microservice-go/model"
@@ -18,9 +19,9 @@ import (
 type UserService interface {
 	Add(user *model.User) (*model.User, error)
 	Delete(request *http.Request) (int, error)
-	Get(request *http.Request) (*model.User, error, int)
-	GetAll(request *http.Request) ([]model.User, error, int)
-	Update(request *http.Request) (*model.User, error, int)
+	Get(request *http.Request) (*model.User, int, error)
+	GetAll(request *http.Request) ([]model.User, int, error)
+	Update(request *http.Request) (*model.User, int, error)
 	Validate(user *model.User) error
 }
 
@@ -41,32 +42,32 @@ func (s *service) Add(user *model.User) (*model.User, error) {
 func (s *service) Delete(request *http.Request) (int, error) {
 	s.Logger.Println("request delete user")
 
-	id, err := getIdFromRequestVars(request)
+	id, err := getIDFromRequestVars(request)
 	if id == 0 || err != nil {
-		return 0, fmt.Errorf("cannot parse ID of the user to delete: %v", err)
+		return 0, fmt.Errorf("cannot parse ID of the user to delete: %w", err)
 	}
 
 	return id, s.Repo.Delete(id)
 }
 
-func (s *service) Get(request *http.Request) (*model.User, error, int) {
+func (s *service) Get(request *http.Request) (*model.User, int, error) {
 	s.Logger.Println("request get single user")
 
-	id, err := getIdFromRequestVars(request)
+	id, err := getIDFromRequestVars(request)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing user's ID: %v", err), http.StatusInternalServerError
+		return nil, http.StatusInternalServerError, fmt.Errorf("error while parsing user's ID: %v", err)
 	}
 
 	user, err := s.Repo.Get(id)
 	if err != nil {
-		return nil, fmt.Errorf("error while retrieving user with ID %v: %v", id, err), http.StatusInternalServerError
+		return nil, http.StatusInternalServerError, fmt.Errorf("error while retrieving user with ID %v: %v", id, err)
 	}
 
 	s.Logger.Println(fmt.Sprintf("user with ID %v has been retrieved successfully", id))
-	return user, err, http.StatusOK
+	return user, http.StatusOK, err
 }
 
-func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
+func (s *service) GetAll(request *http.Request) ([]model.User, int, error) {
 	s.Logger.Println("request list users")
 	var filters *model.User
 
@@ -74,7 +75,7 @@ func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
 
 	errEmptyBody := &errs.EmptyBody{}
 	if err != nil && !errors.As(err, &errEmptyBody) {
-		return nil, fmt.Errorf("error while parsing filter parameters: %v", err), statusCode
+		return nil, statusCode, fmt.Errorf("error while parsing filter parameters: %v", err)
 	}
 
 	var pageSize, page int
@@ -83,23 +84,23 @@ func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
 		pageSize, err = strconv.Atoi(vars["page-size"])
 		if err != nil {
 			msg := fmt.Errorf("cannot get pagination limit: %v", err)
-			return nil, msg, http.StatusInternalServerError
+			return nil, http.StatusInternalServerError, msg
 		}
 
 		page, err = strconv.Atoi(vars["page"])
 		if err != nil {
 			msg := fmt.Errorf("cannot get page: %v", err)
-			return nil, msg, http.StatusInternalServerError
+			return nil, http.StatusInternalServerError, msg
 		}
 
 		if pageSize <= 0 {
 			msg := fmt.Errorf("page size cannot be less then 1")
-			return nil, msg, http.StatusBadRequest
+			return nil, http.StatusBadRequest, msg
 		}
 
 		if page <= 0 {
 			msg := fmt.Errorf("cannot get page less then 1")
-			return nil, msg, http.StatusBadRequest
+			return nil, http.StatusBadRequest, msg
 		}
 	}
 
@@ -119,44 +120,47 @@ func (s *service) GetAll(request *http.Request) ([]model.User, error, int) {
 
 	allUsers, err := s.Repo.GetAll(filters, pageSize, page)
 	if err != nil {
-		return allUsers, err, http.StatusInternalServerError
+		return allUsers, http.StatusInternalServerError, err
 	}
-	return allUsers, err, http.StatusOK
+	return allUsers, http.StatusOK, err
 }
 
-func (s *service) Update(request *http.Request) (*model.User, error, int) {
+func (s *service) Update(request *http.Request) (*model.User, int, error) {
 	s.Logger.Println("request update a user")
 
 	// parse user
-	id, err := getIdFromRequestVars(request)
+	id, err := getIDFromRequestVars(request)
 	var user *model.User
 
 	user, err = s.Repo.Get(id)
 	if err != nil {
-		return nil, fmt.Errorf("error while trying to find the user to update (ID %v): %v", id, err),
-			http.StatusBadRequest
+		return nil,
+			http.StatusBadRequest,
+			fmt.Errorf("error while trying to find the user to update (ID %v): %v", id, err)
 	}
 
 	if user == nil {
-		return nil, fmt.Errorf("error updating user: cannot find user with ID %v", id),
-			http.StatusBadRequest
+		return nil,
+			http.StatusBadRequest,
+			fmt.Errorf("error updating user: cannot find user with ID %v", id)
 	}
 
 	newUser, err, statusCode := unmarshalUserFromRequest(request)
 	if err != nil {
-		return nil, fmt.Errorf("error updating user: %s", err), statusCode
+		return nil, statusCode, fmt.Errorf("error updating user: %s", err)
 	}
 
 	//mergeUserObjects(user, newUser)
 
 	user, err = s.Repo.Update(user, newUser)
 	if err != nil {
-		return nil, fmt.Errorf("error while updating user with ID %v: %v", id, err),
-			http.StatusInternalServerError
+		return nil,
+			http.StatusInternalServerError,
+			fmt.Errorf("error while updating user with ID %v: %v", id, err)
 	}
 
 	s.Logger.Println(fmt.Errorf("user with ID %v has been updated successfully", id))
-	return user, nil, http.StatusOK
+	return user, http.StatusOK, nil
 }
 
 func (*service) Validate(user *model.User) error {

@@ -2,10 +2,11 @@ package repository
 
 import (
 	"fmt"
+	"log"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
 
 	"github.com/pavelerokhin/user-microservice-go/model"
 )
@@ -40,7 +41,7 @@ func (r *repo) Add(user *model.User) (*model.User, error) {
 }
 
 func (r *repo) Delete(id int) error {
-	r.Logger.Printf("request delete user with ID %s from SQLite database", id)
+	r.Logger.Printf("request delete user with ID %v from SQLite database", id)
 
 	var user model.User
 	tx := r.DB.Where("id = ?", id).Find(&user)

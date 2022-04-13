@@ -43,9 +43,9 @@ func main() {
 	userRouter.GET("/users", userController.GetAllUsers)                                  // without pagination
 	userRouter.GET("/users/{page-size:[0-9]+}/{page:[0-9]+}", userController.GetAllUsers) // with pagination
 	userRouter.POST("/user", userController.AddUser)
-	userRouter.POST("/user/{id}", userController.UpdateUser)
-	userRouter.POST("/user/{id}", userController.GetUser)
-	userRouter.DELETE("/user/{id}", userController.DeleteUser)
+	userRouter.POST("/user/{id:[0-9]+}", userController.UpdateUser)
+	userRouter.GET("/user/{id:[0-9]+}", userController.GetUser)
+	userRouter.DELETE("/user/{id:[0-9]+}", userController.DeleteUser)
 
 	userRouter.GET("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

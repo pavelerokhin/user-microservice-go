@@ -45,7 +45,7 @@ CMD ["./user-microservice-go -port 9000"]
 ```
 Then you need to rebuild the image and run the container once more exposing the correct port:
 ```
-docker run -p 8080:8080 golang-user-api
+docker run -p 8080:9000 golang-user-api
 ```
 
 ## Microservice APIs

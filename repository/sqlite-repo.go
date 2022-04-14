@@ -6,15 +6,15 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	glogger "gorm.io/gorm/logger"
 
 	"github.com/pavelerokhin/user-microservice-go/model"
 )
 
-func NewSqliteRepo(l *log.Logger) (UserRepository, error) {
+func NewSqliteRepo(dbName string, l *log.Logger) (UserRepository, error) {
 	l.Println("preparing SQLite database")
-	sql, err := gorm.Open(sqlite.Open("users.db"), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+	sql, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s.db", dbName)), &gorm.Config{
+		Logger: glogger.Default.LogMode(glogger.Silent),
 	})
 	if err != nil {
 		return nil, err

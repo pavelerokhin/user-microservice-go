@@ -1,7 +1,7 @@
 # user-microservice-go
 Test commitment for F.I. 
 
-Test SQLite example database `users.db` is available in the repo and populated.
+Test SQLite example database `user.db` is available in the repo and populated.
 
 ## Data model
 User type:

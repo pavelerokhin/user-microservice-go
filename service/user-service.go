@@ -5,11 +5,10 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 
 	"github.com/pavelerokhin/user-microservice-go/errs"
 	"github.com/pavelerokhin/user-microservice-go/model"
@@ -190,6 +189,15 @@ func (*service) Validate(user *model.User) error {
 	}
 	if user.Country == "" {
 		err := errors.New("the user's country field is empty")
+		return err
+	}
+
+	if !user.CreatedAt.IsZero() {
+		err := errors.New("the user's create time must be empty")
+		return err
+	}
+	if !user.UpdatedAt.IsZero() {
+		err := errors.New("the user's update time must be empty")
 		return err
 	}
 

@@ -17,15 +17,15 @@ func NewMuxRouter(logger *log.Logger) Router {
 }
 
 func (mr *muxRouter) DELETE(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	mr.MuxDispatcher.HandleFunc(uri, f).Methods("DELETE")
+	mr.MuxDispatcher.HandleFunc(uri, f).Methods(http.MethodDelete)
 }
 
 func (mr *muxRouter) GET(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	mr.MuxDispatcher.HandleFunc(uri, f).Methods("GET")
+	mr.MuxDispatcher.HandleFunc(uri, f).Methods(http.MethodGet)
 }
 
 func (mr *muxRouter) POST(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	mr.MuxDispatcher.HandleFunc(uri, f).Methods("POST")
+	mr.MuxDispatcher.HandleFunc(uri, f).Methods(http.MethodPost)
 }
 
 func (mr *muxRouter) SERVE(port string) {

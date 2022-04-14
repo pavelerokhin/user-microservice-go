@@ -41,7 +41,7 @@ docker run -p 8080:8080 golang-user-api
 ```
 NB the port 8080 is the default port which microservice exposes, you can cutomize it by changing the last directive of the `Dockerfile`, e.g.:
 ```
-CMD ["./user-microservice-go -port 9000"]
+CMD ["./user-microservice-go","-port", "9000"]
 ```
 Then you need to rebuild the image and run the container once more exposing the correct port:
 ```

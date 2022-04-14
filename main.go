@@ -25,7 +25,7 @@ func main() {
 
 	// dependency injection below
 	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags|log.Llongfile)
-	userRepository, err = repository.NewSqliteRepo(logger)
+	userRepository, err = repository.NewSqliteRepo("user", logger)
 	userService = service.New(userRepository, logger)
 	userController = controller.New(userService, logger)
 	userRouter = router.NewMuxRouter(logger)

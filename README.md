@@ -25,6 +25,13 @@ The server will run and listen localhost on the port, by default it is `8080`.
 ```
 go test ./...
 ```
+
+## Run with Docker
+```
+docker build -t golang-user-api
+```
+
+
 ## Microservice APIs
 
 ### Adding a new User

@@ -12,8 +12,8 @@ User type:
 - `password`: type`string`, required  
 - `email`: type`string`, required
 - `country`: type`string`, required
-- `created_at`: (provided by `GORM` library)
-- `updated_at`: (provided by `GORM` library)
+- `created_at`: type`time.Time` (provided by `GORM` library)
+- `updated_at`: type`time.Time` (provided by `GORM` library)
 
 ## Start the server
 ```
@@ -68,7 +68,7 @@ You can delete a user by its `id`, sending a `DELETE` request to the URI `/user/
 
 Deleting user with id 1:
 ```
-curl --location --request POST 'http://localhost:8080/user/1' 
+curl --location --request DELETE 'http://localhost:8080/user/1' 
 ```
 
 ### Return all Users
@@ -89,12 +89,27 @@ curl --location --request GET 'http://localhost:8080/users/3/2'
 You can combine pagination with filtering (API below),
 
 ### Return filtered list of Users:
-
+You can get filtered l;list of users by sending a `GET` request to `/users`. The request body must 
+contain a json with all filtering request.
+Get all users from Israel:
 ```
-curl --location --request GET 'http://localhost:8080/users'
+curl --location --request GET 'http://localhost:9000/users' \
+--header 'Content-Type: application/json' \
+--data-raw '    {
+        "country": "Israel"
+    }'
 ```
 You can combine pagination with filtering (API above),
 
 ### Return User by `id`
 It wasn't requested by the test commitment, but it is handy to have this API available. 
 You can get a single user by its `id` sending a `GET` request to `/user/<id>`.
+
+E.g.:
+```
+curl --location --request GET 'http://localhost:9000/user/1' \
+--header 'Content-Type: application/json' \
+--data-raw '    {
+        "country": "Israel"
+    }'
+```

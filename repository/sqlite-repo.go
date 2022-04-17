@@ -13,6 +13,11 @@ import (
 
 func NewSqliteRepo(dbName string, l *log.Logger) (UserRepository, error) {
 	l.Println("preparing SQLite database")
+
+	if dbName == "" {
+		return nil, fmt.Errorf("database name is empty")
+	}
+
 	sql, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s.db", dbName)), &gorm.Config{
 		Logger: glogger.Default.LogMode(glogger.Silent),
 	})
@@ -33,7 +38,7 @@ func (r *repo) Add(user *model.User) (*model.User, error) {
 	r.Logger.Println("request add a new user to SQLite database")
 	tx := r.DB.Create(&user)
 	if tx.Error != nil {
-		r.Logger.Fatalf("Failed adding a new post: %v", tx.Error)
+		r.Logger.Printf("Failed adding a new post: %v", tx.Error)
 		return nil, tx.Error
 	}
 
@@ -111,7 +116,7 @@ func (r *repo) Update(user, newUser *model.User) (*model.User, error) {
 
 	var err error
 	if tx.RowsAffected != 0 {
-		r.Logger.Printf("user has been listed successfully in SQLite database")
+		r.Logger.Printf("user has been updated successfully in SQLite database")
 	} else {
 		err = fmt.Errorf("there are some problems updating user with ID %v", user.ID)
 		r.Logger.Printf(err.Error())

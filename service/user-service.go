@@ -69,12 +69,15 @@ func (s *service) Get(request *http.Request) (*model.User, int, error) {
 func (s *service) GetAll(request *http.Request) ([]model.User, int, error) {
 	s.Logger.Println("service request list users")
 	var filters *model.User
+	var statusCode = http.StatusOK
+	var err error
 
-	filters, err, statusCode := unmarshalUserFromRequest(request)
-
-	errEmptyBody := &errs.EmptyBody{}
-	if err != nil && !errors.As(err, &errEmptyBody) {
-		return nil, statusCode, fmt.Errorf("error while parsing filter parameters: %v", err)
+	if request.Body != nil {
+		filters, err, statusCode = unmarshalUserFromRequest(request)
+		errEmptyBody := &errs.EmptyBody{}
+		if err != nil && !errors.As(err, &errEmptyBody) {
+			return nil, statusCode, fmt.Errorf("error while parsing filter parameters: %v", err)
+		}
 	}
 
 	var pageSize, page int

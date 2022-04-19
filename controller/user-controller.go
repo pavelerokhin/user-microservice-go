@@ -85,7 +85,6 @@ func (c controller) GetUser(response http.ResponseWriter, request *http.Request)
 
 func (c controller) GetAllUsers(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
-
 	users, statusCode, err := c.Service.GetAll(request)
 	if err != nil {
 		msg := fmt.Sprintf("error getting users from the database: %v", err)

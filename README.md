@@ -2,6 +2,10 @@
 Test commitment for F.I. 
 
 Test SQLite example database `user.db` is available in the repo and populated.
+## Test coverage
+`repository` coverage: 90.0% of statements
+`service`    coverage: 69.4% of statements
+`controller` coverage: 49.4% of statements
 
 ## Data model
 User type:

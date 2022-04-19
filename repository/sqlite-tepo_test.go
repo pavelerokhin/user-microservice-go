@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	dbName     = "test"
-	testRepo   UserRepository
-	testLogger = log.New(os.Stdout, "testing-repository", log.LstdFlags|log.Llongfile)
-	testUsers  = []model.User{
+	dbName             = "test"
+	testUserRepository UserRepository
+	testLogger         = log.New(os.Stdout, "testing-repository", log.LstdFlags|log.Llongfile)
+	testUsers          = []model.User{
 		{
 			ID:        1,
 			FirstName: "user1",
@@ -39,7 +39,7 @@ var (
 
 func setupTestCase(t *testing.T) {
 	var err error
-	testRepo, err = NewSqliteRepo(dbName, testLogger)
+	testUserRepository, err = NewSqliteRepo(dbName, testLogger)
 	require.NoError(t, err)
 }
 
@@ -66,7 +66,7 @@ func TestNewSqliteRepoEmptyNameKO(t *testing.T) {
 func TestAddOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
-	result, err := testRepo.Add(&testUsers[0])
+	result, err := testUserRepository.Add(&testUsers[0])
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
 	require.Equal(t, &testUsers[0], result)
@@ -75,11 +75,11 @@ func TestAddOK(t *testing.T) {
 func TestAddNotUniqueKO(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
-	result, err := testRepo.Add(&testUsers[0])
+	result, err := testUserRepository.Add(&testUsers[0])
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
 
-	result, err = testRepo.Add(&testUsers[0])
+	result, err = testUserRepository.Add(&testUsers[0])
 	require.Error(t, err)
 	require.Nil(t, result)
 }
@@ -89,9 +89,9 @@ func TestDeleteOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	_, _ = testRepo.Add(&testUsers[0])
+	_, _ = testUserRepository.Add(&testUsers[0])
 
-	err := testRepo.Delete(testUsers[0].ID)
+	err := testUserRepository.Delete(testUsers[0].ID)
 	require.NoError(t, err)
 }
 
@@ -99,7 +99,7 @@ func TestDeleteNoIdKO(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	err := testRepo.Delete(testUsers[0].ID)
+	err := testUserRepository.Delete(testUsers[0].ID)
 	require.Error(t, err)
 	require.Equal(t, fmt.Sprintf("error: cannot find user with ID %v", testUsers[0].ID),
 		err.Error())
@@ -110,11 +110,11 @@ func TestGetOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	user, err := testRepo.Add(&testUsers[0])
+	user, err := testUserRepository.Add(&testUsers[0])
 	require.NoError(t, err)
 	require.Equal(t, &testUsers[0], user)
 
-	userGet, errGet := testRepo.Get(testUsers[0].ID)
+	userGet, errGet := testUserRepository.Get(testUsers[0].ID)
 	require.NoError(t, errGet)
 	require.Equal(t, user.ID, userGet.ID)
 	require.Equal(t, user.FirstName, userGet.FirstName)
@@ -128,7 +128,7 @@ func TestGetNoIdKO(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	user, err := testRepo.Get(testUsers[0].ID)
+	user, err := testUserRepository.Get(testUsers[0].ID)
 	require.Nil(t, user)
 	require.Error(t, err)
 	require.Equal(t, fmt.Sprintf("user with ID %v not found", testUsers[0].ID), err.Error())
@@ -139,9 +139,9 @@ func TestGetAllOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	_, _ = testRepo.Add(&testUsers[0])
-	_, _ = testRepo.Add(&testUsers[1])
-	users, err := testRepo.GetAll(nil, 0, 0)
+	_, _ = testUserRepository.Add(&testUsers[0])
+	_, _ = testUserRepository.Add(&testUsers[1])
+	users, err := testUserRepository.GetAll(nil, 0, 0)
 	require.NoError(t, err)
 	require.Equal(t, testUsers[0].ID, users[0].ID)
 	require.Equal(t, testUsers[0].FirstName, users[0].FirstName)
@@ -163,9 +163,9 @@ func TestGetAllPaginationOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	_, _ = testRepo.Add(&testUsers[0])
-	_, _ = testRepo.Add(&testUsers[1])
-	users, err := testRepo.GetAll(nil, 1, 1)
+	_, _ = testUserRepository.Add(&testUsers[0])
+	_, _ = testUserRepository.Add(&testUsers[1])
+	users, err := testUserRepository.GetAll(nil, 1, 1)
 	require.NoError(t, err)
 	require.Equal(t, testUsers[0].ID, users[0].ID)
 	require.Equal(t, testUsers[0].FirstName, users[0].FirstName)
@@ -175,7 +175,7 @@ func TestGetAllPaginationOK(t *testing.T) {
 	require.Equal(t, testUsers[0].Email, users[0].Email)
 	require.Equal(t, testUsers[0].Country, users[0].Country)
 
-	users, err = testRepo.GetAll(nil, 1, 2)
+	users, err = testUserRepository.GetAll(nil, 1, 2)
 	require.Equal(t, testUsers[1].ID, users[0].ID)
 	require.Equal(t, testUsers[1].FirstName, users[0].FirstName)
 	require.Equal(t, testUsers[1].LastName, users[0].LastName)
@@ -189,9 +189,9 @@ func TestGetAllFilteringOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	_, _ = testRepo.Add(&testUsers[0])
-	_, _ = testRepo.Add(&testUsers[1])
-	users, err := testRepo.GetAll(&testUsers[0], 0, 0)
+	_, _ = testUserRepository.Add(&testUsers[0])
+	_, _ = testUserRepository.Add(&testUsers[1])
+	users, err := testUserRepository.GetAll(&testUsers[0], 0, 0)
 	require.NoError(t, err)
 	require.Equal(t, testUsers[0].ID, users[0].ID)
 	require.Equal(t, testUsers[0].FirstName, users[0].FirstName)
@@ -206,9 +206,9 @@ func TestGetAllPaginationFilteringOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	_, _ = testRepo.Add(&testUsers[0])
-	_, _ = testRepo.Add(&testUsers[1])
-	users, err := testRepo.GetAll(&model.User{
+	_, _ = testUserRepository.Add(&testUsers[0])
+	_, _ = testUserRepository.Add(&testUsers[1])
+	users, err := testUserRepository.GetAll(&model.User{
 		ID: testUsers[1].ID,
 	}, 1, 1)
 	require.NoError(t, err)
@@ -226,8 +226,8 @@ func TestUpdateOK(t *testing.T) {
 	setupTestCase(t)
 	defer cleanTestCase(t)
 
-	_, _ = testRepo.Add(&testUsers[0])
-	user, err := testRepo.Update(&testUsers[0], &testUsers[1])
+	_, _ = testUserRepository.Add(&testUsers[0])
+	user, err := testUserRepository.Update(&testUsers[0], &testUsers[1])
 	require.NoError(t, err)
 	require.Equal(t, testUsers[0].ID, user.ID)
 	require.Equal(t, testUsers[0].FirstName, user.FirstName)

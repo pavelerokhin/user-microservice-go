@@ -34,12 +34,12 @@ func New(repository repository.UserRepository, logger *log.Logger) UserService {
 }
 
 func (s *service) Add(user *model.User) (*model.User, error) {
-	s.Logger.Println("request add a new user")
+	s.Logger.Println("service request add a new user")
 	return s.Repo.Add(user)
 }
 
 func (s *service) Delete(request *http.Request) (int, error) {
-	s.Logger.Println("request delete user")
+	s.Logger.Println("service request delete user")
 
 	id, err := getIDFromRequestVars(request)
 	if id == 0 || err != nil {
@@ -50,7 +50,7 @@ func (s *service) Delete(request *http.Request) (int, error) {
 }
 
 func (s *service) Get(request *http.Request) (*model.User, int, error) {
-	s.Logger.Println("request get single user")
+	s.Logger.Println("service request get single user")
 
 	id, err := getIDFromRequestVars(request)
 	if err != nil {
@@ -67,14 +67,17 @@ func (s *service) Get(request *http.Request) (*model.User, int, error) {
 }
 
 func (s *service) GetAll(request *http.Request) ([]model.User, int, error) {
-	s.Logger.Println("request list users")
+	s.Logger.Println("service request list users")
 	var filters *model.User
+	var statusCode = http.StatusOK
+	var err error
 
-	filters, err, statusCode := unmarshalUserFromRequest(request)
-
-	errEmptyBody := &errs.EmptyBody{}
-	if err != nil && !errors.As(err, &errEmptyBody) {
-		return nil, statusCode, fmt.Errorf("error while parsing filter parameters: %v", err)
+	if request.Body != nil {
+		filters, err, statusCode = unmarshalUserFromRequest(request)
+		errEmptyBody := &errs.EmptyBody{}
+		if err != nil && !errors.As(err, &errEmptyBody) {
+			return nil, statusCode, fmt.Errorf("error while parsing filter parameters: %v", err)
+		}
 	}
 
 	var pageSize, page int
@@ -125,10 +128,10 @@ func (s *service) GetAll(request *http.Request) ([]model.User, int, error) {
 }
 
 func (s *service) Update(request *http.Request) (*model.User, int, error) {
-	s.Logger.Println("request update a user")
+	s.Logger.Println("service request update a user")
 
 	// parse user
-	id, err := getIDFromRequestVars(request)
+	var id, err = getIDFromRequestVars(request)
 	var user *model.User
 
 	user, err = s.Repo.Get(id)
@@ -148,8 +151,6 @@ func (s *service) Update(request *http.Request) (*model.User, int, error) {
 	if err != nil {
 		return nil, statusCode, fmt.Errorf("error updating user: %s", err)
 	}
-
-	//mergeUserObjects(user, newUser)
 
 	user, err = s.Repo.Update(user, newUser)
 	if err != nil {

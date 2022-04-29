@@ -130,7 +130,7 @@ curl --location --request GET 'http://localhost:9000/users' \
 You can combine pagination with filtering (API above),
 
 ### Return User by `id`
-It wasn't requested by the test commitment, but it is handy to have this API available. 
+It is handy to have this API available as well. 
 You can get a single user by its `id` sending a `GET` request to `/user/<id>`.
 
 E.g.:

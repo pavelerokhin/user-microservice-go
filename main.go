@@ -24,7 +24,7 @@ func main() {
 	var err error
 
 	// dependency injection below
-	logger := log.New(os.Stdout, "faceit-test-commitment", log.LstdFlags|log.Llongfile)
+	logger := log.New(os.Stdout, "user-service-log", log.LstdFlags|log.Llongfile)
 	userRepository, err = repository.NewSqliteRepo("user", logger)
 	userService = service.New(userRepository, logger)
 	userController = controller.New(userService, logger)

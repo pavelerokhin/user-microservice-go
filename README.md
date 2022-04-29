@@ -1,5 +1,5 @@
 # user-microservice-go
-Test commitment for F.I. 
+Simple user microservice implementing clean architecture principles.
 
 Test SQLite example database `user.db` is available in the repo and populated.
 
